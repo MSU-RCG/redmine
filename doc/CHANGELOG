@@ -4,6 +4,10 @@ Redmine - project management software
 Copyright (C) 2006-2012  Jean-Philippe Lang
 http://www.redmine.org/
 
+== 2013-02-22 v2.1.7
+
+* Upgrade to Rails 3.2.12
+
 == 2013-01-09 v2.1.6
 
 * Upgrade to Rails 3.2.11
