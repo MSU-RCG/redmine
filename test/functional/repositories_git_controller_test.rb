@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2012  Jean-Philippe Lang
+# Copyright (C) 2006-2013  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -430,6 +430,16 @@ class RepositoriesGitControllerTest < ActionController::TestCase
           end
         end
       end
+    end
+
+    def test_diff_should_show_filenames
+      get :diff, :id => PRJ_ID, :rev => 'deff712f05a90d96edbd70facc47d944be5897e3', :type => 'inline'
+      assert_response :success
+      assert_template 'diff'
+      # modified file
+      assert_select 'th.filename', :text => 'sources/watchers_controller.rb'
+      # deleted file
+      assert_select 'th.filename', :text => 'test.txt'
     end
 
     def test_save_diff_type

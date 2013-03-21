@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2012  Jean-Philippe Lang
+# Copyright (C) 2006-2013  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -99,18 +99,36 @@ class IssueRelationTest < ActiveSupport::TestCase
 
   def test_validates_circular_dependency
     IssueRelation.delete_all
-    assert IssueRelation.create!(:issue_from => Issue.find(1), :issue_to => Issue.find(2), :relation_type => IssueRelation::TYPE_PRECEDES)
-    assert IssueRelation.create!(:issue_from => Issue.find(2), :issue_to => Issue.find(3), :relation_type => IssueRelation::TYPE_PRECEDES)
-    r = IssueRelation.new(:issue_from => Issue.find(3), :issue_to => Issue.find(1), :relation_type => IssueRelation::TYPE_PRECEDES)
+    assert IssueRelation.create!(
+             :issue_from => Issue.find(1), :issue_to => Issue.find(2),
+             :relation_type => IssueRelation::TYPE_PRECEDES
+           )
+    assert IssueRelation.create!(
+             :issue_from => Issue.find(2), :issue_to => Issue.find(3),
+             :relation_type => IssueRelation::TYPE_PRECEDES
+           )
+    r = IssueRelation.new(
+          :issue_from => Issue.find(3), :issue_to => Issue.find(1),
+          :relation_type => IssueRelation::TYPE_PRECEDES
+        )
     assert !r.save
     assert_not_nil r.errors[:base]
   end
 
   def test_validates_circular_dependency_on_reverse_relations
     IssueRelation.delete_all
-    assert IssueRelation.create!(:issue_from => Issue.find(1), :issue_to => Issue.find(3), :relation_type => IssueRelation::TYPE_BLOCKS)
-    assert IssueRelation.create!(:issue_from => Issue.find(1), :issue_to => Issue.find(2), :relation_type => IssueRelation::TYPE_BLOCKED)
-    r = IssueRelation.new(:issue_from => Issue.find(2), :issue_to => Issue.find(1), :relation_type => IssueRelation::TYPE_BLOCKED)
+    assert IssueRelation.create!(
+             :issue_from => Issue.find(1), :issue_to => Issue.find(3),
+             :relation_type => IssueRelation::TYPE_BLOCKS
+           )
+    assert IssueRelation.create!(
+             :issue_from => Issue.find(1), :issue_to => Issue.find(2),
+             :relation_type => IssueRelation::TYPE_BLOCKED
+           )
+    r = IssueRelation.new(
+          :issue_from => Issue.find(2), :issue_to => Issue.find(1),
+          :relation_type => IssueRelation::TYPE_BLOCKED
+        )
     assert !r.save
     assert_not_nil r.errors[:base]
   end

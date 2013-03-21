@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2012  Jean-Philippe Lang
+# Copyright (C) 2006-2013  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -51,6 +51,15 @@ class ProjectNestedSetTest < ActiveSupport::TestCase
     Project.update_all "lft = NULL, rgt = NULL"
 
     Project.rebuild!
+    assert_valid_nested_set
+  end
+
+  def test_rebuild_tree_should_build_valid_tree_even_with_valid_lft_rgt_values
+    Project.update_all "name = 'YY'", {:id => @a.id }
+    # lft and rgt values are still valid (Project.rebuild! would not update anything)
+    # but projects are not ordered properly (YY is in the first place)
+
+    Project.rebuild_tree!
     assert_valid_nested_set
   end
 

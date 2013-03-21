@@ -1,5 +1,5 @@
 /* Redmine - project management software
-   Copyright (C) 2006-2012  Jean-Philippe Lang */
+   Copyright (C) 2006-2013  Jean-Philippe Lang */
 
 function checkAll(id, checked) {
   if (checked) {
@@ -178,6 +178,20 @@ function buildFilterRow(field, operator, values) {
     );
     $('#values_'+fieldId).val(values[0]);
     break;
+  case "relation":
+    tr.find('td.values').append(
+      '<span style="display:none;"><input type="text" name="v['+field+'][]" id="values_'+fieldId+'" size="6" class="value" /></span>' +
+      '<span style="display:none;"><select class="value" name="v['+field+'][]" id="values_'+fieldId+'_1"></select></span>'
+    );
+    $('#values_'+fieldId).val(values[0]);
+    select = tr.find('td.values select');
+    for (i=0;i<allProjects.length;i++){
+      var filterValue = allProjects[i];
+      var option = $('<option>');
+      option.val(filterValue[1]).text(filterValue[0]);
+      if (values[0] == filterValue[1]) {option.attr('selected', true)};
+      select.append(option);
+    }
   case "integer":
   case "float":
     tr.find('td.values').append(
@@ -228,7 +242,13 @@ function toggleOperator(field) {
     case "!*":
     case "*":
     case "t":
+    case "ld":
     case "w":
+    case "lw":
+    case "l2w":
+    case "m":
+    case "lm":
+    case "y":
     case "o":
     case "c":
       enableValues(field, []);
@@ -238,11 +258,18 @@ function toggleOperator(field) {
       break;
     case "<t+":
     case ">t+":
+    case "><t+":
     case "t+":
     case ">t-":
     case "<t-":
+    case "><t-":
     case "t-":
       enableValues(field, [2]);
+      break;
+    case "=p":
+    case "=!p":
+    case "!p":
+      enableValues(field, [1]);
       break;
     default:
       enableValues(field, [0]);
@@ -261,40 +288,6 @@ function toggleMultiSelect(el) {
 function submit_query_form(id) {
   selectAllOptions("selected_columns");
   $('#'+id).submit();
-}
-
-var fileFieldCount = 1;
-function addFileField() {
-  var fields = $('#attachments_fields');
-  if (fields.children().length >= 10) return false;
-  fileFieldCount++;
-  var s = fields.children('span').first().clone();
-  s.children('input.file').attr('name', "attachments[" + fileFieldCount + "][file]").val('');
-  s.children('input.description').attr('name', "attachments[" + fileFieldCount + "][description]").val('');
-  fields.append(s);
-}
-
-function removeFileField(el) {
-  var fields = $('#attachments_fields');
-  var s = $(el).parents('span').first();
-  if (fields.children().length > 1) {
-    s.remove();
-  } else {
-    s.children('input.file').val('');
-    s.children('input.description').val('');
-  }
-}
-
-function checkFileSize(el, maxSize, message) {
-  var files = el.files;
-  if (files) {
-    for (var i=0; i<files.length; i++) {
-      if (files[i].size > maxSize) {
-        alert(message);
-        el.value = "";
-      }
-    }
-  }
 }
 
 function showTab(name) {
@@ -463,18 +456,22 @@ function updateBulkEditFrom(url) {
   });
 }
 
-function observeAutocompleteField(fieldId, url) {
+function observeAutocompleteField(fieldId, url, options) {
   $(document).ready(function() {
-    $('#'+fieldId).autocomplete({
+    $('#'+fieldId).autocomplete($.extend({
       source: url,
-      minLength: 2
-    });
+      minLength: 2,
+      search: function(){$('#'+fieldId).addClass('ajax-loading');},
+      response: function(){$('#'+fieldId).removeClass('ajax-loading');},
+    }, options));
+    $('#'+fieldId).addClass('autocomplete');
   });
 }
 
 function observeSearchfield(fieldId, targetId, url) {
   $('#'+fieldId).each(function() {
     var $this = $(this);
+    $this.addClass('autocomplete');
     $this.attr('data-value-was', $this.val());
     var check = function() {
       var val = $this.val();
@@ -484,7 +481,7 @@ function observeSearchfield(fieldId, targetId, url) {
           url: url,
           type: 'get',
           data: {q: $this.val()},
-          success: function(data){ $('#'+targetId).html(data); },
+          success: function(data){ if(targetId) $('#'+targetId).html(data); },
           beforeSend: function(){ $this.addClass('ajax-loading'); },
           complete: function(){ $this.removeClass('ajax-loading'); }
         });
@@ -551,16 +548,19 @@ function warnLeavingUnsaved(message) {
   };
 };
 
-$(document).ready(function(){
-  $('#ajax-indicator').bind('ajaxSend', function(){
-    if ($('.ajax-loading').length == 0) {
+function setupAjaxIndicator() {
+
+  $('#ajax-indicator').bind('ajaxSend', function(event, xhr, settings) {
+  
+    if ($('.ajax-loading').length == 0 && settings.contentType != 'application/octet-stream') {
       $('#ajax-indicator').show();
     }
   });
-  $('#ajax-indicator').bind('ajaxStop', function(){
+  
+  $('#ajax-indicator').bind('ajaxStop', function() {
     $('#ajax-indicator').hide();
   });
-});
+}
 
 function hideOnLoad() {
   $('.hol').hide();
@@ -580,5 +580,11 @@ function addFormObserversForDoubleSubmit() {
   });
 }
 
+function blockEventPropagation(event) {
+  event.stopPropagation();
+  event.preventDefault();
+}
+
+$(document).ready(setupAjaxIndicator);
 $(document).ready(hideOnLoad);
 $(document).ready(addFormObserversForDoubleSubmit);
