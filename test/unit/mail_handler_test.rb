@@ -534,37 +534,6 @@ class MailHandlerTest < ActiveSupport::TestCase
     assert_equal ja, issue.subject
   end
 
-  def test_add_issue_with_japanese_subject
-    issue = submit_email(
-              'subject_japanese_1.eml',
-              :issue => {:project => 'ecookbook'}
-            )
-    assert_kind_of Issue, issue
-    ja = "\xe3\x83\x86\xe3\x82\xb9\xe3\x83\x88"
-    ja.force_encoding('UTF-8') if ja.respond_to?(:force_encoding)
-    assert_equal ja, issue.subject
-  end
-
-  def test_add_issue_with_no_subject_header
-    issue = submit_email(
-              'no_subject_header.eml',
-              :issue => {:project => 'ecookbook'}
-            )
-    assert_kind_of Issue, issue
-    assert_equal '(no subject)', issue.subject
-  end
-
-  def test_add_issue_with_mixed_japanese_subject
-    issue = submit_email(
-              'subject_japanese_2.eml',
-              :issue => {:project => 'ecookbook'}
-            )
-    assert_kind_of Issue, issue
-    ja = "Re: \xe3\x83\x86\xe3\x82\xb9\xe3\x83\x88"
-    ja.force_encoding('UTF-8') if ja.respond_to?(:force_encoding)
-    assert_equal ja, issue.subject
-  end
-
   def test_should_ignore_emails_from_locked_users
     User.find(2).lock!
 

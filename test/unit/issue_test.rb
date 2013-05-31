@@ -1509,6 +1509,55 @@ class IssueTest < ActiveSupport::TestCase
     end
   end
 
+  def test_child_issue_should_consider_parent_soonest_start_on_create
+    set_language_if_valid 'en'
+    issue1 = Issue.generate!(:start_date => '2012-10-15', :due_date => '2012-10-17')
+    issue2 = Issue.generate!(:start_date => '2012-10-18', :due_date => '2012-10-20')
+    IssueRelation.create!(:issue_from => issue1, :issue_to => issue2,
+                          :relation_type => IssueRelation::TYPE_PRECEDES)
+    issue1.reload
+    issue2.reload
+    assert_equal Date.parse('2012-10-18'), issue2.start_date
+
+    child = Issue.new(:parent_issue_id => issue2.id, :start_date => '2012-10-16',
+      :project_id => 1, :tracker_id => 1, :status_id => 1, :subject => 'Child', :author_id => 1)
+    assert !child.valid?
+    assert_include 'Start date is invalid', child.errors.full_messages
+    assert_equal Date.parse('2012-10-18'), child.soonest_start
+    child.start_date = '2012-10-18'
+    assert child.save
+  end
+
+  def test_setting_parent_to_a_dependent_issue_should_not_validate
+    set_language_if_valid 'en'
+    issue1 = Issue.generate!
+    issue2 = Issue.generate!
+    issue3 = Issue.generate!
+    IssueRelation.create!(:issue_from => issue1, :issue_to => issue2, :relation_type => IssueRelation::TYPE_PRECEDES)
+    IssueRelation.create!(:issue_from => issue3, :issue_to => issue1, :relation_type => IssueRelation::TYPE_PRECEDES)
+    issue3.reload
+    issue3.parent_issue_id = issue2.id
+    assert !issue3.valid?
+    assert_include 'Parent task is invalid', issue3.errors.full_messages
+  end
+
+  def test_setting_parent_should_not_allow_circular_dependency
+    set_language_if_valid 'en'
+    issue1 = Issue.generate!
+    issue2 = Issue.generate!
+    IssueRelation.create!(:issue_from => issue1, :issue_to => issue2, :relation_type => IssueRelation::TYPE_PRECEDES)
+    issue3 = Issue.generate!
+    issue2.reload
+    issue2.parent_issue_id = issue3.id
+    issue2.save!
+    issue4 = Issue.generate!
+    IssueRelation.create!(:issue_from => issue3, :issue_to => issue4, :relation_type => IssueRelation::TYPE_PRECEDES)
+    issue4.reload
+    issue4.parent_issue_id = issue1.id
+    assert !issue4.valid?
+    assert_include 'Parent task is invalid', issue4.errors.full_messages
+  end
+
   def test_overdue
     assert Issue.new(:due_date => 1.day.ago.to_date).overdue?
     assert !Issue.new(:due_date => Date.today).overdue?

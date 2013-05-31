@@ -471,7 +471,11 @@ module ApplicationHelper
   end
 
   def accesskey(s)
-    Redmine::AccessKeys.key_for s
+    @used_accesskeys ||= []
+    key = Redmine::AccessKeys.key_for(s)
+    return nil if @used_accesskeys.include?(key)
+    @used_accesskeys << key
+    key
   end
 
   # Formats text according to system settings.
@@ -758,7 +762,7 @@ module ApplicationHelper
                 if repository && (changeset = Changeset.visible.where("repository_id = ? AND scmid LIKE ?", repository.id, "#{name}%").first)
                   link = link_to h("#{project_prefix}#{repo_prefix}#{name}"), {:only_path => only_path, :controller => 'repositories', :action => 'revision', :id => project, :repository_id => repository.identifier_param, :rev => changeset.identifier},
                                                :class => 'changeset',
-                                               :title => truncate_single_line(h(changeset.comments), :length => 100)
+                                               :title => truncate_single_line(changeset.comments, :length => 100)
                 end
               else
                 if repository && User.current.allowed_to?(:browse_repository, project)

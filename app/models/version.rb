@@ -48,7 +48,8 @@ class Version < ActiveRecord::Base
     'wiki_page_title',
     'status',
     'sharing',
-    'custom_field_values'
+    'custom_field_values',
+    'custom_fields'
 
   # Returns true if +user+ or current user is allowed to view the version
   def visible?(user=User.current)
