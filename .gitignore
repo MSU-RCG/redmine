@@ -34,3 +34,5 @@
 
 /.powrc
 /.rvmrc
+/.ruby-version
+/.ruby-gemset
