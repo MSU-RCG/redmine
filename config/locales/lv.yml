@@ -46,8 +46,8 @@ lv:
         one:   "aptuveni 1 stunda"
         other: "aptuveni %{count} stundas"
       x_hours:
-        one:   "1 hour"
-        other: "%{count} hours"
+        one:   "1 stunda"
+        other: "%{count} stundas"
       x_days:
         one:   "1 diena"
         other: "%{count} dienas"
@@ -775,7 +775,7 @@ lv:
   button_cancel: Atcelt
   button_activate: Aktivizēt
   button_sort: Kārtot
-  button_log_time: Ilgs laiks
+  button_log_time: Reģistrēt laiku
   button_rollback: Atjaunot uz šo versiju
   button_watch: Vērot
   button_unwatch: Nevērot

@@ -469,7 +469,7 @@ class IssueTest < ActiveSupport::TestCase
     issue.tracker_id = 2
     issue.subject = 'New subject'
     assert !issue.save
-    assert_not_nil issue.errors[:tracker_id]
+    assert_not_equal [], issue.errors[:tracker_id]
   end
 
   def test_category_based_assignment
@@ -488,9 +488,9 @@ class IssueTest < ActiveSupport::TestCase
     WorkflowTransition.create!(:role_id => 1, :tracker_id => 1,
                                :old_status_id => 1, :new_status_id => 3,
                                :author => true, :assignee => false)
-    WorkflowTransition.create!(:role_id => 1, :tracker_id => 1, :old_status_id => 1,
-                               :new_status_id => 4, :author => false,
-                               :assignee => true)
+    WorkflowTransition.create!(:role_id => 1, :tracker_id => 1,
+                               :old_status_id => 1, :new_status_id => 4,
+                               :author => false, :assignee => true)
     WorkflowTransition.create!(:role_id => 1, :tracker_id => 1,
                                :old_status_id => 1, :new_status_id => 5,
                                :author => true, :assignee => true)
@@ -516,6 +516,26 @@ class IssueTest < ActiveSupport::TestCase
                             :project_id => 1, :author => user,
                             :assigned_to => user)
     assert_equal [1, 2, 3, 4, 5], issue.new_statuses_allowed_to(user).map(&:id)
+
+    group = Group.generate!
+    group.users << user
+    issue = Issue.generate!(:tracker => tracker, :status => status,
+                            :project_id => 1, :author => user,
+                            :assigned_to => group)
+    assert_equal [1, 2, 3, 4, 5], issue.new_statuses_allowed_to(user).map(&:id)
+  end
+
+  def test_new_statuses_allowed_to_should_consider_group_assignment
+    WorkflowTransition.delete_all
+    WorkflowTransition.create!(:role_id => 1, :tracker_id => 1,
+                               :old_status_id => 1, :new_status_id => 4,
+                               :author => false, :assignee => true)
+    user = User.find(2)
+    group = Group.generate!
+    group.users << user
+ 
+    issue = Issue.generate!(:author_id => 1, :assigned_to => group)
+    assert_include 4, issue.new_statuses_allowed_to(user).map(&:id)
   end
 
   def test_new_statuses_allowed_to_should_return_all_transitions_for_admin
@@ -1004,7 +1024,7 @@ class IssueTest < ActiveSupport::TestCase
                       :status_id => 1, :fixed_version_id => 1,
                       :subject => 'New issue')
     assert !issue.save
-    assert_not_nil issue.errors[:fixed_version_id]
+    assert_not_equal [], issue.errors[:fixed_version_id]
   end
 
   def test_should_not_be_able_to_assign_a_new_issue_to_a_locked_version
@@ -1012,7 +1032,7 @@ class IssueTest < ActiveSupport::TestCase
                       :status_id => 1, :fixed_version_id => 2,
                       :subject => 'New issue')
     assert !issue.save
-    assert_not_nil issue.errors[:fixed_version_id]
+    assert_not_equal [], issue.errors[:fixed_version_id]
   end
 
   def test_should_be_able_to_assign_a_new_issue_to_an_open_version
@@ -1033,7 +1053,7 @@ class IssueTest < ActiveSupport::TestCase
     issue = Issue.find(11)
     issue.status_id = 1
     assert !issue.save
-    assert_not_nil issue.errors[:base]
+    assert_not_equal [], issue.errors[:base]
   end
 
   def test_should_be_able_to_reopen_and_reassign_an_issue_assigned_to_a_closed_version
@@ -1790,6 +1810,136 @@ class IssueTest < ActiveSupport::TestCase
                                  :relation_type => IssueRelation::TYPE_PRECEDES)
 
     assert_equal [2, 3, 8], Issue.find(1).all_dependent_issues.collect(&:id).sort
+  end
+
+  def test_all_dependent_issues_with_subtask
+    IssueRelation.delete_all
+
+    project = Project.generate!(:name => "testproject")
+    
+    parentIssue = Issue.generate!(:project => project)
+    childIssue1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue.id)
+    childIssue2 = Issue.generate!(:project => project, :parent_issue_id => parentIssue.id)
+
+    assert_equal [childIssue1.id, childIssue2.id].sort, parentIssue.all_dependent_issues.collect(&:id).uniq.sort
+  end
+
+  def test_all_dependent_issues_does_not_include_self
+    IssueRelation.delete_all
+
+    project = Project.generate!(:name => "testproject")
+
+    parentIssue = Issue.generate!(:project => project)
+    childIssue = Issue.generate!(:project => project, :parent_issue_id => parentIssue.id)
+
+    assert_equal [childIssue.id], parentIssue.all_dependent_issues.collect(&:id)
+  end
+
+  def test_all_dependent_issues_with_parenttask_and_sibling
+    IssueRelation.delete_all
+
+    project = Project.generate!(:name => "testproject")
+
+    parentIssue = Issue.generate!(:project => project)
+    childIssue1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue.id)
+    childIssue2 = Issue.generate!(:project => project, :parent_issue_id => parentIssue.id)
+
+    assert_equal [parentIssue.id].sort, childIssue1.all_dependent_issues.collect(&:id)
+  end
+
+  def test_all_dependent_issues_with_relation_to_leaf_in_other_tree
+    IssueRelation.delete_all
+
+    project = Project.generate!(:name => "testproject")
+
+    parentIssue1 = Issue.generate!(:project => project)
+    childIssue1_1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue1.id)
+    childIssue1_2 = Issue.generate!(:project => project, :parent_issue_id => parentIssue1.id)
+
+    parentIssue2 = Issue.generate!(:project => project)
+    childIssue2_1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue2.id)
+    childIssue2_2 = Issue.generate!(:project => project, :parent_issue_id => parentIssue2.id)
+
+
+    assert IssueRelation.create(:issue_from => parentIssue1,
+                                :issue_to   => childIssue2_2,
+                                :relation_type => IssueRelation::TYPE_BLOCKS)
+
+    assert_equal [childIssue1_1.id, childIssue1_2.id, parentIssue2.id, childIssue2_2.id].sort,
+                 parentIssue1.all_dependent_issues.collect(&:id).uniq.sort
+  end
+
+  def test_all_dependent_issues_with_relation_to_parent_in_other_tree
+    IssueRelation.delete_all
+
+    project = Project.generate!(:name => "testproject")
+
+    parentIssue1 = Issue.generate!(:project => project)
+    childIssue1_1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue1.id)
+    childIssue1_2 = Issue.generate!(:project => project, :parent_issue_id => parentIssue1.id)
+
+    parentIssue2 = Issue.generate!(:project => project)
+    childIssue2_1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue2.id)
+    childIssue2_2 = Issue.generate!(:project => project, :parent_issue_id => parentIssue2.id)
+
+
+    assert IssueRelation.create(:issue_from => parentIssue1,
+                                :issue_to   => parentIssue2,
+                                :relation_type => IssueRelation::TYPE_BLOCKS)
+
+    assert_equal [childIssue1_1.id, childIssue1_2.id, parentIssue2.id, childIssue2_1.id, childIssue2_2.id].sort,
+                 parentIssue1.all_dependent_issues.collect(&:id).uniq.sort
+  end
+
+  def test_all_dependent_issues_with_transitive_relation
+    IssueRelation.delete_all
+
+    project = Project.generate!(:name => "testproject")
+
+    parentIssue1 = Issue.generate!(:project => project)
+    childIssue1_1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue1.id)
+
+    parentIssue2 = Issue.generate!(:project => project)
+    childIssue2_1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue2.id)
+
+    independentIssue = Issue.generate!(:project => project)
+
+    assert IssueRelation.create(:issue_from => parentIssue1,
+                                :issue_to   => childIssue2_1,
+                                :relation_type => IssueRelation::TYPE_RELATES)
+
+    assert IssueRelation.create(:issue_from => childIssue2_1,
+                                :issue_to   => independentIssue,
+                                :relation_type => IssueRelation::TYPE_RELATES)
+
+    assert_equal [childIssue1_1.id, parentIssue2.id, childIssue2_1.id, independentIssue.id].sort,
+                 parentIssue1.all_dependent_issues.collect(&:id).uniq.sort
+  end
+
+  def test_all_dependent_issues_with_transitive_relation2
+    IssueRelation.delete_all
+
+    project = Project.generate!(:name => "testproject")
+
+    parentIssue1 = Issue.generate!(:project => project)
+    childIssue1_1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue1.id)
+
+    parentIssue2 = Issue.generate!(:project => project)
+    childIssue2_1 = Issue.generate!(:project => project, :parent_issue_id => parentIssue2.id)
+
+    independentIssue = Issue.generate!(:project => project)
+
+    assert IssueRelation.create(:issue_from => parentIssue1,
+                                :issue_to   => independentIssue,
+                                :relation_type => IssueRelation::TYPE_RELATES)
+
+    assert IssueRelation.create(:issue_from => independentIssue,
+                                :issue_to   => childIssue2_1,
+                                :relation_type => IssueRelation::TYPE_RELATES)
+
+    assert_equal [childIssue1_1.id, parentIssue2.id, childIssue2_1.id, independentIssue.id].sort,
+                 parentIssue1.all_dependent_issues.collect(&:id).uniq.sort
+
   end
 
   def test_all_dependent_issues_with_persistent_circular_dependency
