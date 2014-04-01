@@ -1,7 +1,7 @@
 # encoding: utf-8
 #
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -40,6 +40,13 @@ class AttachmentTest < ActiveSupport::TestCase
 
   def test_container_for_new_attachment_should_be_nil
     assert_nil Attachment.new.container
+  end
+
+  def test_filename_should_remove_eols
+    assert_equal "line_feed", Attachment.new(:filename => "line\nfeed").filename
+    assert_equal "line_feed", Attachment.new(:filename => "some\npath/line\nfeed").filename
+    assert_equal "carriage_return", Attachment.new(:filename => "carriage\rreturn").filename
+    assert_equal "carriage_return", Attachment.new(:filename => "some\rpath/carriage\rreturn").filename
   end
 
   def test_create

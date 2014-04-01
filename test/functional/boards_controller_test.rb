@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -117,7 +117,7 @@ class BoardsControllerTest < ActionController::TestCase
 
     assert_select 'select[name=?]', 'board[parent_id]' do
       assert_select 'option', (Project.find(1).boards.size + 1)
-      assert_select 'option[value=]', :text => ''
+      assert_select 'option[value=]', :text => '&nbsp;'
       assert_select 'option[value=1]', :text => 'Help'
     end
   end

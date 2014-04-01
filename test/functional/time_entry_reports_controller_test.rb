@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -256,8 +256,8 @@ class TimeEntryReportsControllerTest < ActionController::TestCase
     assert_equal 'text/csv; header=present', @response.content_type
     lines = @response.body.chomp.split("\n")    
     # Headers
-    s1 = "\xa5\xce\xa4\xe1,2011-11-11,\xc1`\xadp"
-    s2 = "\xc1`\xadp"
+    s1 = "\xa5\xce\xa4\xe1,2011-11-11,\xa4u\xae\xc9\xc1`\xadp"
+    s2 = "\xa4u\xae\xc9\xc1`\xadp"
     if s1.respond_to?(:force_encoding)
       s1.force_encoding('Big5')
       s2.force_encoding('Big5')
@@ -307,7 +307,7 @@ class TimeEntryReportsControllerTest < ActionController::TestCase
     assert_equal 'text/csv; header=present', @response.content_type
     lines = @response.body.chomp.split("\n")    
     # Headers
-    s1 = "\xa5\xce\xa4\xe1,2011-11-11,\xc1`\xadp"
+    s1 = "\xa5\xce\xa4\xe1,2011-11-11,\xa4u\xae\xc9\xc1`\xadp"
     if s1.respond_to?(:force_encoding)
       s1.force_encoding('Big5')
     end

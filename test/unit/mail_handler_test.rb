@@ -1,7 +1,7 @@
 # encoding: utf-8
 #
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -370,6 +370,15 @@ class MailHandlerTest < ActiveSupport::TestCase
     assert issue.description.include?('Lorem ipsum dolor sit amet, consectetuer adipiscing elit.')
   end
 
+  def test_add_issue_with_invalid_project_should_be_assigned_to_default_project
+    issue = submit_email('ticket_on_given_project.eml', :issue => {:project => 'ecookbook'}, :allow_override => 'project') do |email|
+      email.gsub!(/^Project:.+$/, 'Project: invalid')
+    end
+    assert issue.is_a?(Issue)
+    assert !issue.new_record?
+    assert_equal 'ecookbook', issue.project.identifier
+  end
+
   def test_add_issue_with_localized_attributes
     User.find_by_mail('jsmith@somenet.foo').update_attribute 'language', 'fr'
     issue = submit_email(
@@ -490,6 +499,21 @@ class MailHandlerTest < ActiveSupport::TestCase
     assert File.exist?(attachment.diskfile)
     assert_equal 5, File.size(attachment.diskfile)
     assert_equal 'd8e8fca2dc0f896fd7cb4cb0031ba249', attachment.digest
+  end
+
+  def test_multiple_inline_text_parts_should_be_appended_to_issue_description
+    issue = submit_email('multiple_text_parts.eml', :issue => {:project => 'ecookbook'})
+    assert_include 'first', issue.description
+    assert_include 'second', issue.description
+    assert_include 'third', issue.description
+  end
+
+  def test_attachment_text_part_should_be_added_as_issue_attachment
+    issue = submit_email('multiple_text_parts.eml', :issue => {:project => 'ecookbook'})
+    assert_not_include 'Plain text attachment', issue.description
+    attachment = issue.attachments.detect {|a| a.filename == 'textfile.txt'}
+    assert_not_nil attachment
+    assert_include 'Plain text attachment', File.read(attachment.diskfile)
   end
 
   def test_add_issue_with_iso_8859_1_subject
@@ -743,6 +767,24 @@ class MailHandlerTest < ActiveSupport::TestCase
     end
   end
 
+  def test_attachments_that_match_mail_handler_excluded_filenames_should_be_ignored
+    with_settings :mail_handler_excluded_filenames => '*.vcf, *.jpg' do
+      issue = submit_email('ticket_with_attachment.eml', :issue => {:project => 'onlinestore'})
+      assert issue.is_a?(Issue)
+      assert !issue.new_record?
+      assert_equal 0, issue.reload.attachments.size
+    end
+  end
+
+  def test_attachments_that_do_not_match_mail_handler_excluded_filenames_should_be_attached
+    with_settings :mail_handler_excluded_filenames => '*.vcf, *.gif' do
+      issue = submit_email('ticket_with_attachment.eml', :issue => {:project => 'onlinestore'})
+      assert issue.is_a?(Issue)
+      assert !issue.new_record?
+      assert_equal 1, issue.reload.attachments.size
+    end
+  end
+
   def test_email_with_long_subject_line
     issue = submit_email('ticket_with_long_subject.eml')
     assert issue.is_a?(Issue)
@@ -772,14 +814,6 @@ class MailHandlerTest < ActiveSupport::TestCase
     end
   end
 
-  def test_new_user_from_attributes_should_respect_minimum_password_length
-    with_settings :password_min_length => 15 do
-      user = MailHandler.new_user_from_attributes('jsmith@example.net')
-      assert user.valid?
-      assert user.password.length >= 15
-    end
-  end
-
   def test_new_user_from_attributes_should_use_default_login_if_invalid
     user = MailHandler.new_user_from_attributes('foo+bar@example.net')
     assert user.valid?
@@ -804,6 +838,19 @@ class MailHandlerTest < ActiveSupport::TestCase
     str2.force_encoding('UTF-8') if str2.respond_to?(:force_encoding)
     assert_equal str1, user.firstname
     assert_equal str2, user.lastname
+  end
+
+  def test_extract_options_from_env_should_return_options
+    options = MailHandler.extract_options_from_env({
+      'tracker' => 'defect',
+      'project' => 'foo',
+      'unknown_user' => 'create'
+    })
+
+    assert_equal({
+      :issue => {:tracker => 'defect', :project => 'foo'},
+      :unknown_user => 'create'
+    }, options)
   end
 
   private

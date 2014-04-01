@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -182,13 +182,10 @@ class RepositoryTest < ActiveSupport::TestCase
   def test_scan_changesets_for_issue_ids
     Setting.default_language = 'en'
 
-    # choosing a status to apply to fix issues
-    Setting.commit_fix_status_id = IssueStatus.find(
-                                     :first,
-                                     :conditions => ["is_closed = ?", true]).id
-    Setting.commit_fix_done_ratio = "90"
     Setting.commit_ref_keywords = 'refs , references, IssueID'
-    Setting.commit_fix_keywords = 'fixes , closes'
+    Setting.commit_update_keywords = [
+      {'keywords' => 'fixes , closes', 'status_id' => IssueStatus.where(:is_closed => true).first.id, 'done_ratio' => '90'}
+    ]
     Setting.default_language = 'en'
     ActionMailer::Base.deliveries.clear
 
@@ -278,7 +275,7 @@ class RepositoryTest < ActiveSupport::TestCase
   end
 
   def test_manual_user_mapping
-    assert_no_difference "Changeset.count(:conditions => 'user_id <> 2')" do
+    assert_no_difference "Changeset.where('user_id <> 2').count" do
       c = Changeset.create!(
               :repository => @repository,
               :committer => 'foo',
@@ -327,6 +324,12 @@ class RepositoryTest < ActiveSupport::TestCase
     klass = Repository::Filesystem
     assert klass.scm_adapter_class
     assert_equal true, klass.scm_available
+  end
+
+  def test_extra_info_should_not_return_non_hash_value
+    repo = Repository.new
+    repo.extra_info = "foo"
+    assert_nil repo.extra_info
   end
 
   def test_merge_extra_info

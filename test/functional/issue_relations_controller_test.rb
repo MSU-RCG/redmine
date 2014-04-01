@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -108,8 +108,6 @@ class IssueRelationsControllerTest < ActionController::TestCase
                  :relation => {:issue_to_id => '4', :relation_type => 'relates', :delay => ''}
     end
   end
-
-  should "prevent relation creation when there's a circular dependency"
 
   def test_create_xhr_with_failure
     assert_no_difference 'IssueRelation.count' do

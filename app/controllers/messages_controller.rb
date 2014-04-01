@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2013  Jean-Philippe Lang
+# Copyright (C) 2006-2014  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -35,7 +35,7 @@ class MessagesController < ApplicationController
     page = params[:page]
     # Find the page of the requested reply
     if params[:r] && page.nil?
-      offset = @topic.children.count(:conditions => ["#{Message.table_name}.id < ?", params[:r].to_i])
+      offset = @topic.children.where("#{Message.table_name}.id < ?", params[:r].to_i).count
       page = 1 + offset / REPLIES_PER_PAGE
     end
 
