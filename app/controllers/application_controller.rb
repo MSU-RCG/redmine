@@ -119,7 +119,7 @@ class ApplicationController < ActionController::Base
       if (key = api_key_from_request)
         # Use API key
         user = User.find_by_api_key(key)
-      else
+      elsif request.authorization.to_s =~ /\ABasic /i
         # HTTP Basic, either username/password or API key/random
         authenticate_with_http_basic do |username, password|
           user = User.try_to_login(username, password) || User.find_by_api_key(username)
@@ -201,7 +201,7 @@ class ApplicationController < ActionController::Base
     if User.current.logged?
       lang = find_language(User.current.language)
     end
-    if lang.nil? && request.env['HTTP_ACCEPT_LANGUAGE']
+    if lang.nil? && !Setting.force_default_language_for_anonymous? && request.env['HTTP_ACCEPT_LANGUAGE']
       accept_lang = parse_qvalues(request.env['HTTP_ACCEPT_LANGUAGE']).first
       if !accept_lang.blank?
         accept_lang = accept_lang.downcase
@@ -373,7 +373,7 @@ class ApplicationController < ActionController::Base
     url
   end
 
-  def redirect_back_or_default(default)
+  def redirect_back_or_default(default, options={})
     back_url = params[:back_url].to_s
     if back_url.present?
       begin
@@ -387,6 +387,9 @@ class ApplicationController < ActionController::Base
         logger.warn("Could not redirect to invalid URL #{back_url}")
         # redirect to default
       end
+    elsif options[:referer]
+      redirect_to_referer_or default
+      return
     end
     redirect_to default
     false

@@ -194,8 +194,13 @@ class Repository < ActiveRecord::Base
     scm.entry(path, identifier)
   end
 
+  def scm_entries(path=nil, identifier=nil)
+    scm.entries(path, identifier)
+  end
+  protected :scm_entries
+
   def entries(path=nil, identifier=nil)
-    entries = scm.entries(path, identifier)
+    entries = scm_entries(path, identifier)
     load_entries_changesets(entries)
     entries
   end
@@ -287,9 +292,8 @@ class Repository < ActiveRecord::Base
         new_user_id = h[committer]
         if new_user_id && (new_user_id.to_i != user_id.to_i)
           new_user_id = (new_user_id.to_i > 0 ? new_user_id.to_i : nil)
-          Changeset.update_all(
-               "user_id = #{ new_user_id.nil? ? 'NULL' : new_user_id }",
-               ["repository_id = ? AND committer = ?", id, committer])
+          Changeset.where(["repository_id = ? AND committer = ?", id, committer]).
+            update_all("user_id = #{new_user_id.nil? ? 'NULL' : new_user_id}")
         end
       end
       @committers            = nil
@@ -408,7 +412,7 @@ class Repository < ActiveRecord::Base
       self.is_default = true
     end
     if is_default? && is_default_changed?
-      Repository.update_all(["is_default = ?", false], ["project_id = ?", project_id])
+      Repository.where(["project_id = ?", project_id]).update_all(["is_default = ?", false])
     end
   end
 

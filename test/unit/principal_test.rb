@@ -31,8 +31,10 @@ class PrincipalTest < ActiveSupport::TestCase
   end
 
   def test_member_of_scope_should_return_the_union_of_all_members
-    projects = Project.find_all_by_id(1, 2)
-    assert_equal projects.map(&:principals).flatten.sort, Principal.member_of(projects).sort
+    projects = Project.find([1])
+    assert_equal [3, 2], Principal.member_of(projects).sort.map(&:id)
+    projects = Project.find([1, 2])
+    assert_equal [3, 2, 8, 11], Principal.member_of(projects).sort.map(&:id)
   end
 
   def test_member_of_scope_should_be_empty_for_no_projects
@@ -40,9 +42,12 @@ class PrincipalTest < ActiveSupport::TestCase
   end
 
   def test_not_member_of_scope_should_return_users_that_have_no_memberships
-    projects = Project.find_all_by_id(1, 2)
-    expected = (Principal.all - projects.map(&:memberships).flatten.map(&:principal)).sort
-    assert_equal expected, Principal.not_member_of(projects).sort
+    [[1], [1, 2]].each do |ids|
+      projects = Project.find(ids)
+      assert_equal ids.size, projects.count
+      expected = (Principal.all - projects.map(&:memberships).flatten.map(&:principal)).sort
+      assert_equal expected, Principal.not_member_of(projects).sort
+    end
   end
 
   def test_not_member_of_scope_should_be_empty_for_no_projects
@@ -60,7 +65,8 @@ class PrincipalTest < ActiveSupport::TestCase
         a.name.downcase <=> b.name.downcase
       end
     end
-    assert_equal expected_order.map(&:name).map(&:downcase), scope.sorted.all.map(&:name).map(&:downcase)
+    assert_equal expected_order.map(&:name).map(&:downcase),
+                 scope.sorted.map(&:name).map(&:downcase)
   end
 
   test "like scope should search login" do

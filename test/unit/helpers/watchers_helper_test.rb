@@ -20,6 +20,7 @@ require File.expand_path('../../../test_helper', __FILE__)
 class WatchersHelperTest < ActionView::TestCase
   include WatchersHelper
   include Redmine::I18n
+  include Rails.application.routes.url_helpers
 
   fixtures :users, :issues
 
@@ -54,6 +55,10 @@ class WatchersHelperTest < ActionView::TestCase
       :remote => true, :method => 'post', :class => "issue-bulk-watcher icon icon-fav-off"
     )
     assert_equal expected, watcher_link([Issue.find(1), Issue.find(3)], User.find(1))
+  end
+
+  def test_watcher_link_with_nil_should_return_empty_string
+    assert_equal '', watcher_link(nil, User.find(1))
   end
 
   test '#watcher_link with a watched object' do

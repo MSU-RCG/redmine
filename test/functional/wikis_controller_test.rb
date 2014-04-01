@@ -51,7 +51,7 @@ class WikisControllerTest < ActionController::TestCase
     end
 
     assert_include 'errorExplanation', response.body
-    assert_include 'Start page can&#x27;t be blank', response.body
+    assert_include "Start page #{ESCAPED_CANT} be blank", response.body
   end
 
   def test_update
@@ -71,7 +71,8 @@ class WikisControllerTest < ActionController::TestCase
   def test_destroy
     @request.session[:user_id] = 1
     post :destroy, :id => 1, :confirm => 1
-    assert_redirected_to :controller => 'projects', :action => 'settings', :id => 'ecookbook', :tab => 'wiki'
+    assert_redirected_to :controller => 'projects',
+                         :action => 'settings', :id => 'ecookbook', :tab => 'wiki'
     assert_nil Project.find(1).wiki
   end
 

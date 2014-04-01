@@ -239,7 +239,7 @@ da:
   field_is_public: Offentlig
   field_parent: Underprojekt af
   field_is_in_roadmap: Sager vist i roadmap
-  field_login: MSU NetID
+  field_login: Login
   field_mail_notification: Email-påmindelser
   field_admin: Administrator
   field_last_login_on: Sidste forbindelse
@@ -1100,6 +1100,7 @@ da:
   setting_jsonp_enabled: Enable JSONP support
   field_inherit_members: Inherit members
   field_closed_on: Closed
+  field_generate_password: Generate password
   setting_default_projects_tracker_ids: Default trackers for new projects
   label_total_time: Total
   text_scm_config: You can configure your SCM commands in config/configuration.yml. Please restart the application after editing it.
@@ -1117,4 +1118,14 @@ da:
     current password
   setting_mail_handler_excluded_filenames: Exclude attachments by name
   text_convert_available: ImageMagick convert available (optional)
->>>>>>> redmine/2.4-stable
+  label_link: Link
+  label_only: only
+  label_drop_down_list: drop-down list
+  label_checkboxes: checkboxes
+  label_link_values_to: Link values to URL
+  setting_force_default_language_for_anonymous: Force default language for anonymous
+    users
+  setting_force_default_language_for_loggedin: Force default language for logged-in
+    users
+  label_custom_field_select_type: Select the type of object to which the custom field
+    is to be attached
