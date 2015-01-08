@@ -133,7 +133,7 @@
 #
 # == Adding Tables
 #
-# In Textile, simple tables can be added by seperating each column by
+# In Textile, simple tables can be added by separating each column by
 # a pipe.
 #
 #     |a|simple|table|row|
@@ -341,7 +341,7 @@ class RedCloth3 < String
     A_HLGN = /(?:(?:<>|<|>|\=|[()]+)+)/
     A_VLGN = /[\-^~]/
     C_CLAS = '(?:\([^")]+\))'
-    C_LNGE = '(?:\[[^"\[\]]+\])'
+    C_LNGE = '(?:\[[a-z\-_]+\])'
     C_STYL = '(?:\{[^"}]+\})'
     S_CSPN = '(?:\\\\\d+)'
     S_RSPN = '(?:/\d+)'
@@ -480,7 +480,7 @@ class RedCloth3 < String
         end
 
         lang = $1 if
-            text.sub!( /\[([^)]+?)\]/, '' )
+            text.sub!( /\[([a-z\-_]+?)\]/, '' )
 
         cls = $1 if
             text.sub!( /\(([^()]+?)\)/, '' )

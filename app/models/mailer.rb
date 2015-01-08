@@ -370,7 +370,7 @@ class Mailer < ActionMailer::Base
   end
 
   def mail(headers={}, &block)
-    headers.merge! 'X-Mailer' => 'Redmine',
+    headers.reverse_merge! 'X-Mailer' => 'Redmine',
             'X-Redmine-Host' => Setting.host_name,
             'X-Redmine-Site' => Setting.app_title,
             'X-Auto-Response-Suppress' => 'OOF',
@@ -464,7 +464,7 @@ class Mailer < ActionMailer::Base
     if rand
       hash << Redmine::Utils.random_hex(8)
     end
-    host = Setting.mail_from.to_s.gsub(%r{^.*@}, '')
+    host = Setting.mail_from.to_s.strip.gsub(%r{^.*@|>}, '')
     host = "#{::Socket.gethostname}.redmine" if host.empty?
     "#{hash.join('.')}@#{host}"
   end
