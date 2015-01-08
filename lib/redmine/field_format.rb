@@ -98,9 +98,10 @@ module Redmine
         if value.blank?
           nil
         elsif value.is_a?(Array)
-          value.map do |v|
+          casted = value.map do |v|
             cast_single_value(custom_field, v, customized)
-          end.sort
+          end
+          casted.compact.sort
         else
           cast_single_value(custom_field, value, customized)
         end
@@ -497,6 +498,9 @@ module Redmine
           tag_id = nil
           s << view.content_tag('label', tag + ' ' + label) 
         end
+        if custom_value.custom_field.multiple?
+          s << view.hidden_field_tag(tag_name, '')
+        end
         css = "#{options[:class]} check_box_group"
         view.content_tag('span', s, options.merge(:class => css))
       end
@@ -561,6 +565,25 @@ module Redmine
 
       def group_statement(custom_field)
         order_statement(custom_field)
+      end
+
+      def edit_tag(view, tag_id, tag_name, custom_value, options={})
+        case custom_value.custom_field.edit_tag_style
+        when 'check_box'
+          single_check_box_edit_tag(view, tag_id, tag_name, custom_value, options)
+        when 'radio'
+          check_box_edit_tag(view, tag_id, tag_name, custom_value, options)
+        else
+          select_edit_tag(view, tag_id, tag_name, custom_value, options)
+        end
+      end
+
+      # Renders the edit tag as a simple check box
+      def single_check_box_edit_tag(view, tag_id, tag_name, custom_value, options={})
+        s = ''.html_safe
+        s << view.hidden_field_tag(tag_name, '0', :id => nil)
+        s << view.check_box_tag(tag_name, '1', custom_value.value.to_s == '1', :id => tag_id)
+        view.content_tag('span', s, options)
       end
     end
 
